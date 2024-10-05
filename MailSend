@@ -1,0 +1,54 @@
+// Send Mail Script with support for alphanumeric usernames and email handles
+send_mail = function(remote_ip, ssh_port, ssh_user, ssh_password, from_handle, to_handle, subject, body)
+    // Step 1: Connect to the remote SSH server
+    remote_shell = get_shell.connect_service(remote_ip, ssh_port, ssh_user, ssh_password, "ssh")
+    
+    if not remote_shell then
+        exit("Error: Unable to connect to the SSH server.")
+    end if
+
+    if not remote_shell.host_computer then
+        exit("Error: 'host_computer' not found. Make sure the SSH server is accessible.")
+    end if
+    
+    host = remote_shell.host_computer  // Get the remote computer object
+
+    // Step 2: Construct the recipient inbox path (it could be a username like 'user123' or email-like 'user@mail.com')
+    recipient_inbox = "/server/Inbox/" + to_handle
+    print("Checking recipient inbox path: " + recipient_inbox)  // Debugging: Print the path being checked
+    
+    // Step 3: Ensure the recipient exists by checking their Inbox folder
+    recipient_folder = host.File(recipient_inbox)
+    
+    if not recipient_folder or recipient_folder.is_folder == 0 then
+        print("Recipient folder not found or is not a folder. Path checked: " + recipient_inbox)  // Debugging info
+        exit("Error: Recipient not found. Please check the recipient handle.")
+    end if
+
+    // Step 4: Create the email file in the recipient's Inbox
+    email_file = recipient_inbox + "/" + md5(current_date + from_handle) + ".txt"  // Use hash of date and sender for unique filename
+    host.touch(recipient_inbox, md5(current_date + from_handle) + ".txt")
+    
+    // Step 5: Write the email content to the file
+    email_content = "From: " + from_handle + "\n"
+    email_content = email_content + "To: " + to_handle + "\n"
+    email_content = email_content + "Subject: " + subject + "\n"
+    email_content = email_content + "Date: " + current_date + "\n"
+    email_content = email_content + "Body: " + body + "\n"
+    
+    host.File(email_file).set_content(email_content)
+    print("Email sent successfully from " + from_handle + " to " + to_handle)
+end function
+
+// Example usage
+remote_ip = "your_server_ip"       // Replace with your SSH server IP
+ssh_port = 22                     // Replace with your SSH port
+ssh_user = "your_ssh_user"        // Replace with your SSH username
+ssh_password = "your_password"    // Replace with your SSH password
+
+from_handle = "user123"  // Replace with the sender's username or email handle
+to_handle = "recipient456"  // Replace with the recipient's username or email handle
+subject = "Test Subject"  // Replace with your email subject
+body = "This is the body of the test email."  // Replace with your email body content
+
+send_mail(remote_ip, ssh_port, ssh_user, ssh_password, from_handle, to_handle, subject, body)  // Send the email
