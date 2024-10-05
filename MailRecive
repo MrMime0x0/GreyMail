@@ -1,0 +1,55 @@
+// Receive Mail Script with proper file content handling
+receive_mail = function(remote_ip, ssh_port, ssh_user, ssh_password, handle)
+    // Step 1: Connect to the remote SSH server
+    remote_shell = get_shell.connect_service(remote_ip, ssh_port, ssh_user, ssh_password, "ssh")
+    
+    if not remote_shell then
+        exit("Error: Unable to connect to the SSH server.")
+    end if
+
+    if not remote_shell.host_computer then
+        exit("Error: 'host_computer' not found. Make sure the SSH server is accessible.")
+    end if
+    
+    host = remote_shell.host_computer  // Get the remote computer object
+
+    // Step 2: Fetch the inbox for the user
+    inbox_path = "/AnonMail/Inbox/" + handle
+    print("Checking inbox path: " + inbox_path)  // Debugging: Print the path being checked
+    
+    // Step 3: Ensure the inbox exists
+    inbox_folder = host.File(inbox_path)
+    
+    if not inbox_folder or inbox_folder.is_folder == 0 then
+        print("Inbox folder not found or is not a folder. Path checked: " + inbox_path)  // Debugging info
+        exit("Error: Inbox not found for user " + handle)
+    end if
+
+    // Step 4: Get all emails in the inbox
+    emails = inbox_folder.get_files()
+    
+    if emails.len == 0 then
+        print("No new emails.")
+        return
+    end if
+    
+    // Step 5: Display all emails
+    for email in emails
+        if email.is_folder == 0 then  // Ensure this is a file, not a folder
+            email_content = email.get_content()  // Safely retrieve the content of the email file
+            print("Email: " + email.name)
+            print("Content:\n" + email_content)
+            print("\n--------------------------\n")
+        end if
+    end for
+end function
+
+// Example usage
+remote_ip = "167.11.187.197"       // Replace with your SSH server IP
+ssh_port = 22                     // Replace with your SSH port
+ssh_user = "root"        // Replace with your SSH username
+ssh_password = "Rimsong"    // Replace with your SSH password
+
+handle = user_input("Enter your username or email handle: ")  // Prompt for the user's username or email handle
+
+receive_mail(remote_ip, ssh_port, ssh_user, ssh_password, handle)  // Fetch and display emails
