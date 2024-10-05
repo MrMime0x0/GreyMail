@@ -45,10 +45,10 @@ receive_mail = function(remote_ip, ssh_port, ssh_user, ssh_password, handle)
 end function
 
 // Example usage
-remote_ip = "167.11.187.197"       // Replace with your SSH server IP
+remote_ip = "your_server_ip"       // Replace with your SSH server IP
 ssh_port = 22                     // Replace with your SSH port
-ssh_user = "root"        // Replace with your SSH username
-ssh_password = "Rimsong"    // Replace with your SSH password
+ssh_user = "your_server_user"        // Replace with your SSH username
+ssh_password = "your_server_password"    // Replace with your SSH password
 
 handle = user_input("Enter your username or email handle: ")  // Prompt for the user's username or email handle
 
