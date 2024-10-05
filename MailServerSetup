@@ -1,0 +1,47 @@
+// SSH Mail Server Setup Script
+setup_remote_mail_server = function(remote_ip, ssh_port, ssh_user, ssh_password)
+    // Step 1: Connect to the remote SSH server
+    remote_shell = get_shell.connect_service(remote_ip, ssh_port, ssh_user, ssh_password, "ssh")
+    
+    if not remote_shell then
+        exit("Error: Unable to connect to the SSH server.")
+    end if
+    
+    host = remote_shell.host_computer  // Get the remote computer object
+
+    // Step 2: Create main server directory if it doesn't exist
+    server_path = "/AnonMail"
+    server_folder = host.File(server_path)
+    
+    // Check if the /server folder exists and is valid
+    if not server_folder or server_folder.is_folder == 0 then
+        host.create_folder("/", "AnonMail")  // Create /server directory
+    end if
+    
+    // Step 3: Create Inbox and Outbox directories inside /server
+    inbox_path = server_path + "/Inbox"
+    outbox_path = server_path + "/Outbox"
+    
+    inbox_folder = host.File(inbox_path)
+    outbox_folder = host.File(outbox_path)
+    
+    if not inbox_folder or inbox_folder.is_folder == 0 then
+        host.create_folder(server_path, "Inbox")  // Create Inbox folder
+    end if
+    
+    if not outbox_folder or outbox_folder.is_folder == 0 then
+        host.create_folder(server_path, "Outbox")  // Create Outbox folder
+    end if
+
+    // Save remote shell session to a global variable to use in other scripts
+    globals.remote_shell = remote_shell
+    print("Mail server setup complete on remote machine.")
+end function
+
+// Example usage
+remote_ip = user_input("Enter SSH server IP: ")  // Prompt for remote IP
+ssh_port = user_input("Enter SSH port: ").to_int  // Prompt for SSH port
+ssh_user = user_input("Enter SSH username: ")  // Prompt for SSH username
+ssh_password = user_input("Enter SSH password: ", 1)  // Prompt for SSH password
+
+setup_remote_mail_server(remote_ip, ssh_port, ssh_user, ssh_password)  // Run the setup
