@@ -1,0 +1,69 @@
+// User Registration Script that supports alphanumeric usernames or email handles
+register_user_on_remote = function(remote_ip, ssh_port, ssh_user, ssh_password, user_handle, password)
+    // Step 1: Connect to the remote SSH server
+    remote_shell = get_shell.connect_service(remote_ip, ssh_port, ssh_user, ssh_password, "ssh")
+    
+    if not remote_shell then
+        exit("Error: Unable to connect to the SSH server.")
+    end if
+
+    host = remote_shell.host_computer  // Get the remote computer object
+
+    // Step 2: Validate the user handle (it can be alphanumeric or include symbols like '@')
+    // We assume the user handle can be any alphanumeric string or email-like format (e.g., user123, user@mail.com)
+
+    // Paths for user-specific directories
+    inbox_path = "/server/Inbox"
+    outbox_path = "/server/Outbox"
+
+    // Step 3: Create user-specific directories in Inbox and Outbox using the handle (email-like or alphanumeric)
+    user_inbox = inbox_path + "/" + user_handle  // Create inbox path using the user handle
+    user_outbox = outbox_path + "/" + user_handle  // Create outbox path using the user handle
+    
+    if not host.File(user_inbox) or host.File(user_inbox).is_folder == 0 then
+        host.create_folder(inbox_path, user_handle)  // Create user Inbox folder for this handle
+    end if
+    
+    if not host.File(user_outbox) or host.File(user_outbox).is_folder == 0 then
+        host.create_folder(outbox_path, user_handle)  // Create user Outbox folder for this handle
+    end if
+    
+    // Step 4: Append the username and hashed password to the users.txt file
+    credentials_file = "/server/users.txt"
+    user_info = user_handle + ":" + md5(password) + "\n"  // Hash the password and add a newline at the end
+
+    file = host.File(credentials_file)
+    
+    if not file then
+        // File doesn't exist, create it
+        host.touch("/server", "users.txt")
+        file = host.File(credentials_file)  // Get the newly created file object
+    end if
+
+    // Safely read existing content if the file is valid and not a folder
+    existing_content = ""
+    if file and file.is_folder == 0 and file.has_permission("r") then
+        existing_content = file.get_content()  // Safely read the file's content
+    end if
+
+    // Ensure the file already ends with a newline; if not, add one before appending the new user
+    if existing_content.len > 0 and existing_content[-1] != "\n" then
+        existing_content = existing_content + "\n"  // Ensure existing content ends with a newline
+    end if
+
+    // Overwrite the file with the combined content (existing + new)
+    combined_content = existing_content + user_info
+    file.set_content(combined_content)  // Overwrite the file content with the new data
+    print("User " + user_handle + " registered successfully on the remote server.")
+end function
+
+// Example usage
+remote_ip = user_input("Enter SSH server IP: ")  // Prompt for remote IP
+ssh_port = user_input("Enter SSH port: ").to_int  // Prompt for SSH port
+ssh_user = user_input("Enter SSH username: ")  // Prompt for SSH username
+ssh_password = user_input("Enter SSH password: ", 1)  // Prompt for SSH password
+
+user_handle = user_input("Enter username or email handle (e.g., user123 or user@mail.com): ")  // Prompt for alphanumeric or email handle
+password = user_input("Enter password: ", 1)  // Prompt for password (masked)
+
+register_user_on_remote(remote_ip, ssh_port, ssh_user, ssh_password, user_handle, password)  // Register the user
